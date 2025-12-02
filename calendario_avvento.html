@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calendario dell'Avvento</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* Reset veloce */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #fffae6 0%, #d61b3c 40%, #240019 100%);
+      color: #fff;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Leggera neve di sfondo */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(2px 2px at 20% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(2px 2px at 80% 30%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(2px 2px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(2px 2px at 70% 70%, rgba(255,255,255,0.7), transparent);
+      background-size: 200px 200px;
+      animation: snow 15s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes snow {
+      from { background-position: 0 0, 0 0, 0 0, 0 0; }
+      to   { background-position: 0 300px, 0 400px, 0 350px, 0 450px; }
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      padding: 20px;
+      text-align: center;
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 3vw, 2.6rem);
+      margin-bottom: 10px;
+      text-shadow: 0 3px 8px rgba(0,0,0,0.5);
+    }
+
+    .subtitle {
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(90px, 1fr));
+      gap: 12px;
+      justify-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .calendar {
+        grid-template-columns: repeat(4, minmax(70px, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .calendar {
+        grid-template-columns: repeat(3, minmax(70px, 1fr));
+      }
+    }
+
+    .day {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      perspective: 800px;
+      cursor: pointer;
+    }
+
+    .door {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #c71f3a, #f44336);
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      border: 2px solid rgba(255,255,255,0.6);
+      transform-origin: left center;
+      transform: rotateY(0deg);
+      transition: transform 0.7s ease, box-shadow 0.3s ease, background 0.3s ease;
+    }
+
+    .door::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+
+    .door .number {
+      text-shadow: 0 3px 5px rgba(0,0,0,0.6);
+    }
+
+    .day:hover .door {
+      box-shadow: 0 12px 22px rgba(0,0,0,0.6);
+      background: linear-gradient(135deg, #e91e63, #ff7043);
+    }
+
+    .content {
+      position: absolute;
+      inset: 4px;
+      border-radius: 8px;
+      background: rgba(10,0,0,0.9);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      overflow: hidden;
+    }
+
+    .content img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* adatta l’immagine alla finestra */
+      border-radius: 6px;
+    }
+
+    /* Stato aperto */
+    .day.open .door {
+      transform: rotateY(-120deg);
+      box-shadow: 0 15px 25px rgba(0,0,0,0.7);
+    }
+
+    .day.open .content {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Stelline che seguono il mouse (prima versione) */
+    .star-trail {
+      position: fixed;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      font-size: 10px;
+      will-change: transform, opacity;
+      animation: starFade 0.9s ease-out forwards;
+      text-shadow: 0 0 6px rgba(255,255,255,0.9);
+      z-index: 9999;
+    }
+
+    @keyframes starFade {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -120%) scale(0.5);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>Calendario dell'Avvento</h1>
+    <p class="subtitle">
+      Clicca sulle finestrelle per scoprire la sorpresa di ogni giorno 🎄
+    </p>
+
+    <div class="calendar" id="calendar">
+      <!-- 24 giorni, contenuto riempito via JS -->
+      <!-- Per semplicità, li scriviamo tutti qui -->
+      <!-- GIORNO 1 -->
+      <div class="day" data-day="1">
+        <div class="door"><span class="number">1</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 2 -->
+      <div class="day" data-day="2">
+        <div class="door"><span class="number">2</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 3 -->
+      <div class="day" data-day="3">
+        <div class="door"><span class="number">3</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 4 -->
+      <div class="day" data-day="4">
+        <div class="door"><span class="number">4</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 5 -->
+      <div class="day" data-day="5">
+        <div class="door"><span class="number">5</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 6 -->
+      <div class="day" data-day="6">
+        <div class="door"><span class="number">6</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 7 -->
+      <div class="day" data-day="7">
+        <div class="door"><span class="number">7</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 8 -->
+      <div class="day" data-day="8">
+        <div class="door"><span class="number">8</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 9 -->
+      <div class="day" data-day="9">
+        <div class="door"><span class="number">9</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 10 -->
+      <div class="day" data-day="10">
+        <div class="door"><span class="number">10</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 11 -->
+      <div class="day" data-day="11">
+        <div class="door"><span class="number">11</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 12 -->
+      <div class="day" data-day="12">
+        <div class="door"><span class="number">12</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 13 -->
+      <div class="day" data-day="13">
+        <div class="door"><span class="number">13</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 14 -->
+      <div class="day" data-day="14">
+        <div class="door"><span class="number">14</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 15 -->
+      <div class="day" data-day="15">
+        <div class="door"><span class="number">15</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 16 -->
+      <div class="day" data-day="16">
+        <div class="door"><span class="number">16</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 17 -->
+      <div class="day" data-day="17">
+        <div class="door"><span class="number">17</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 18 -->
+      <div class="day" data-day="18">
+        <div class="door"><span class="number">18</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 19 -->
+      <div class="day" data-day="19">
+        <div class="door"><span class="number">19</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 20 -->
+      <div class="day" data-day="20">
+        <div class="door"><span class="number">20</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 21 -->
+      <div class="day" data-day="21">
+        <div class="door"><span class="number">21</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 22 -->
+      <div class="day" data-day="22">
+        <div class="door"><span class="number">22</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 23 -->
+      <div class="day" data-day="23">
+        <div class="door"><span class="number">23</span></div>
+        <div class="content"></div>
+      </div>
+      <!-- GIORNO 24 -->
+      <div class="day" data-day="24">
+        <div class="door"><span class="number">24</span></div>
+        <div class="content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Array con le TUE immagini ---
+    // Salva le 7 immagini con questi nomi (o cambia i percorsi come preferisci)
+    const imagePaths = [
+      "img1.png",
+      "img2.png",
+      "img3.png",
+      "img4.png",
+      "img5.png",
+      "img6.png",
+      "img7.png"
+    ];
+
+    // Mescola l'array (shuffle)
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    const shuffled = shuffle([...imagePaths]);
+
+    // Se sono meno di 24 immagini, le ripetiamo finché arriviamo a 24
+    while (shuffled.length < 24) {
+      shuffled.push(...imagePaths);
+    }
+    shuffled.length = 24; // ci fermiamo a 24
+
+    // Inseriamo le immagini nelle finestre
+    const days = document.querySelectorAll('.day');
+    days.forEach((day, index) => {
+      const content = day.querySelector('.content');
+      const img = document.createElement('img');
+      img.src = shuffled[index];
+      img.alt = "Sorpresa giorno " + (index + 1);
+      content.appendChild(img);
+    });
+
+    // Apertura finestrelle
+    document.querySelectorAll('.day').forEach(day => {
+      day.addEventListener('click', () => {
+        day.classList.toggle('open');
+      });
+    });
+
+    // Effetto scia di stelline sul mouse (prima versione)
+    let lastStarTime = 0;
+    const starInterval = 25; // ms: più basso = più stelline
+
+    document.addEventListener('mousemove', (e) => {
+      const now = Date.now();
+      if (now - lastStarTime < starInterval) return;
+      lastStarTime = now;
+
+      const star = document.createElement('span');
+      star.className = 'star-trail';
+      star.textContent = Math.random() > 0.5 ? '✦' : '✧';
+      star.style.left = e.clientX + 'px';
+      star.style.top = e.clientY + 'px';
+      star.style.fontSize = (8 + Math.random() * 8) + 'px';
+
+      document.body.appendChild(star);
+
+      star.addEventListener('animationend', () => {
+        star.remove();
+      });
+    });
+  </script>
+</body>
+</html>
