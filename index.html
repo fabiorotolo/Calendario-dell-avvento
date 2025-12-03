@@ -24,7 +24,7 @@
       position: relative;
     }
 
-    /* Leggera neve di sfondo */
+    /* Leggera neve di sfondo (vecchio effetto, lo teniamo) */
     body::before {
       content: "";
       position: fixed;
@@ -43,6 +43,14 @@
     @keyframes snow {
       from { background-position: 0 0, 0 0, 0 0, 0 0; }
       to   { background-position: 0 300px, 0 400px, 0 350px, 0 450px; }
+    }
+
+    /* Canvas per neve realistica */
+    #snow-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
     }
 
     .wrapper {
@@ -107,7 +115,8 @@
       border: 2px solid rgba(255,255,255,0.6);
       transform-origin: left center;
       transform: rotateY(0deg);
-      transition: transform 0.7s ease, box-shadow 0.3s ease, background 0.3s ease;
+      transition: transform 0.7s ease, box-shadow 0.3s ease, background 0.3s ease, opacity 0.4s ease;
+      z-index: 2;
     }
 
     .door::after {
@@ -144,6 +153,7 @@
       transform: scale(0.9);
       transition: opacity 0.4s ease, transform 0.4s ease;
       overflow: hidden;
+      z-index: 1;
     }
 
     .content img {
@@ -153,10 +163,12 @@
       border-radius: 6px;
     }
 
-    /* Stato aperto */
+    /* Stato aperto: porta trasparente */
     .day.open .door {
       transform: rotateY(-120deg);
       box-shadow: 0 15px 25px rgba(0,0,0,0.7);
+      opacity: 0;              /* porta invisibile */
+      pointer-events: none;    /* non blocca gli oggetti vicini */
     }
 
     .day.open .content {
@@ -187,9 +199,36 @@
         transform: translate(-50%, -120%) scale(0.5);
       }
     }
+
+    /* Pulsante musica */
+    .music-toggle {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255,255,255,0.6);
+      color: #fff;
+      cursor: pointer;
+      z-index: 3;
+      backdrop-filter: blur(4px);
+    }
+    .music-toggle:hover {
+      background: rgba(0,0,0,0.8);
+    }
   </style>
 </head>
 <body>
+
+  <!-- Canvas neve realistica -->
+  <canvas id="snow-canvas"></canvas>
+
+  <!-- Audio di Natale -->
+  <audio id="bg-music" src="musica_natale.mp3" loop></audio>
+  <div class="music-toggle" id="music-toggle">🔇 Musica OFF</div>
+
   <div class="wrapper">
     <h1>Calendario dell'Avvento</h1>
     <p class="subtitle">
@@ -198,7 +237,6 @@
 
     <div class="calendar" id="calendar">
       <!-- 24 giorni, contenuto riempito via JS -->
-      <!-- Per semplicità, li scriviamo tutti qui -->
       <!-- GIORNO 1 -->
       <div class="day" data-day="1">
         <div class="door"><span class="number">1</span></div>
@@ -324,16 +362,20 @@
 
   <script>
     // --- Array con le TUE immagini ---
-    // Salva le 7 immagini con questi nomi (o cambia i percorsi come preferisci)
-    const imagePaths = [
-      "img1.png",
-      "img2.png",
-      "img3.png",
-      "img4.png",
-      "img5.png",
-      "img6.png",
-      "img7.png"
-    ];
+const imagePaths = [
+  "img1.png",
+  "img2.png",
+  "img3.png",
+  "img4.png",
+  "img5.png",
+  "img6.png",
+  "img7.png",
+  "img08.png",
+  "img09.png",
+  "img10.png",
+  "img11.png"
+];
+
 
     // Mescola l'array (shuffle)
     function shuffle(array) {
@@ -391,6 +433,90 @@
         star.remove();
       });
     });
+
+    // ====================== NEVE REALISTICA ======================
+    const snowCanvas = document.getElementById('snow-canvas');
+    const snowCtx = snowCanvas.getContext('2d');
+
+    let sw, sh;
+    function resizeSnowCanvas() {
+      sw = snowCanvas.width  = window.innerWidth;
+      sh = snowCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeSnowCanvas);
+    resizeSnowCanvas();
+
+    const FLAKES = [];
+    const FLAKE_COUNT = 160;
+
+    function createFlake() {
+      return {
+        x: Math.random() * sw,
+        y: Math.random() * sh,
+        r: 1 + Math.random() * 3,
+        speedY: 0.7 + Math.random() * 1.8,
+        speedX: -0.5 + Math.random() * 1,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.02 + Math.random() * 0.03
+      };
+    }
+
+    for (let i = 0; i < FLAKE_COUNT; i++) {
+      FLAKES.push(createFlake());
+    }
+
+    function drawSnow() {
+      snowCtx.clearRect(0, 0, sw, sh);
+      snowCtx.fillStyle = 'rgba(255,255,255,0.9)';
+
+      FLAKES.forEach(f => {
+        f.wobble += f.wobbleSpeed;
+        f.x += f.speedX + Math.cos(f.wobble) * 0.3;
+        f.y += f.speedY;
+
+        if (f.y > sh + 5) {
+          f.y = -10;
+          f.x = Math.random() * sw;
+        }
+        if (f.x > sw + 5) f.x = -5;
+        if (f.x < -5)     f.x = sw + 5;
+
+        snowCtx.beginPath();
+        snowCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        snowCtx.fill();
+      });
+
+      requestAnimationFrame(drawSnow);
+    }
+    drawSnow();
+
+    // ====================== MUSICA DI NATALE ======================
+    const bgMusic = document.getElementById('bg-music');
+    const musicToggle = document.getElementById('music-toggle');
+    let musicOn = false;
+
+    function updateMusicLabel() {
+      musicToggle.textContent = musicOn ? '🔊 Musica ON' : '🔇 Musica OFF';
+    }
+
+    // click sul pulsante per ON/OFF
+    musicToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!musicOn) {
+        bgMusic.play().then(() => {
+          musicOn = true;
+          updateMusicLabel();
+        }).catch(() => {
+          alert('Il browser sta bloccando l\'autoplay. Riprova cliccando ancora.');
+        });
+      } else {
+        bgMusic.pause();
+        musicOn = false;
+        updateMusicLabel();
+      }
+    });
+
+    updateMusicLabel();
   </script>
 </body>
 </html>
